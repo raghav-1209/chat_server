@@ -48,6 +48,6 @@ fun generateToken(userId: String, config: JwtConfig): String {
         .withIssuer(config.issuer)
         .withAudience(config.audience)
         .withClaim("user_uid", userId)
-        .withExpiresAt(Date(System.currentTimeMillis() + 2 * 60 * 1000)) // 2 min
+        .withExpiresAt(Date(System.currentTimeMillis() + 15* 60 * 1000)) // 2 min
         .sign(Algorithm.HMAC256(config.secret))
 }

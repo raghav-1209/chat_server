@@ -33,16 +33,12 @@ fun Application.configureRouting(dataBaseSource: DataBaseSource, imgBBService: I
 
             }
             }
-
-
         configChats(dataBaseSource,aiService)
         connectWebSocket(dataBaseSource)
         configProfile(dataBaseSource,imgBBService)
-
         configAuth(dataBaseSource,imgBBService,jwtConfig)
         configActivity(dataBaseSource,jwtConfig)
         configStatus(dataBaseSource,imgBBService)
-
     }
 }
 fun Routing.configProfile(dataBaseSource: DataBaseSource,imgBBService: ImgBBService){

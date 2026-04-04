@@ -12,10 +12,8 @@ class AiChatService(private val openAiKey: String) {
 
     private val httpclient = Client.httpclient
 
-    //  Each user has their own conversation
     private val conversations = mutableMapOf<String, MutableList<OpenAIMessage>>()
 
-    //  System prompt (AI behavior)
     private fun createSystemPrompt(): MutableList<OpenAIMessage> {
         return mutableListOf(
             OpenAIMessage(
