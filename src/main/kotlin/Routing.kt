@@ -2,12 +2,17 @@ package com
 
 import com.Notifications.followNotifications
 import com.Notifications.messageNotification
+import com.auth0.jwt.JWTVerifier
 import com.database.DataBaseSource
 import com.models.*
 import com.services.AiChatService
+import com.services.Client
 import com.services.ImgBBResponse
 import com.services.ImgBBService
 import com.websockets.SessionManager
+import io.ktor.client.call.body
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
 import io.ktor.http.*
 import io.ktor.http.content.*
 import io.ktor.server.application.*
@@ -21,6 +26,7 @@ import io.ktor.websocket.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.util.*
+import org.example.com.raghav.jwt.JwtService
 
 fun Application.configureRouting(dataBaseSource: DataBaseSource, imgBBService: ImgBBService, jwtConfig: JwtConfig, aiService: AiChatService) {
 
@@ -440,35 +446,24 @@ fun Routing.configAuth(dataBaseSource: DataBaseSource, imgBBService: ImgBBServic
     route("/auth") {
         post("/signIn") {
             println("The SiginIn Fun Called")
-            val data=call.receive<SignInData>()
-            dataBaseSource.insertUser(
-                SignInData(
-                    email = data.email,
-                    name = data.name,
-                    uid = data.uid,
-                )
-            )
-            val randomToken= UUID.randomUUID().toString()
-            val accessToken=generateToken(data.uid,jwtConfig)
-            dataBaseSource.saveJwtToken(TokenData(
-                data.uid,
-                token = randomToken,
-            ))
-            println("The server sends jwttoen to client ${accessToken}")
-
-            call.respond(UserSession(randomToken,accessToken))
+            val data=call.receive<SignInData>()?:return@post
+          val response = Client.httpclient.post("http://localhost:8082/auth/signIn") {
+                contentType(ContentType.Application.Json)
+                setBody(data)
+            }
+            val resp=response.body<UserSession>()
+            println(resp)
+            call.respond(resp)
 
         }
+
         post ("/fcmToken"){
             try {
                 println("The Fun Called fcm Token fun")
                 val data = call.receive<TokenData>()
-                dataBaseSource.saveFcm(
-                    FcmData(
-                        token = data.token,
-                        uid = data.uid,
-                    )
-                )
+              val response= Client.httpclient.post {
+
+              }
                 println("the Token Of Device ${data.token}")
                 call.respond(HttpStatusCode.OK)
             }catch (e:Exception){

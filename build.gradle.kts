@@ -48,5 +48,6 @@ val kotlinVersion ="3.3.3"
 
     implementation("com.google.firebase:firebase-admin:9.2.0")
     implementation("io.github.cdimascio:dotenv-kotlin:6.4.1")
+    implementation("com.raghav:jwt_lib:1.0.0")
 
 }
