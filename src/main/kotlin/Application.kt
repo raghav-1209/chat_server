@@ -29,7 +29,7 @@ fun Application.module() {
         realm = jwtSection.property("realm").getString(),
         secret = jwtSection.property("secret").getString()
     )
-    configureAuth(jwtConfig)
+    configureAuth()
     val database= DataBaseFactory()
     database.init()
     val dotenv = dotenv()

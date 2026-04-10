@@ -26,6 +26,7 @@ import io.ktor.websocket.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.util.*
+import io.ktor.client.request.*
 import org.example.com.raghav.jwt.JwtService
 
 fun Application.configureRouting(dataBaseSource: DataBaseSource, imgBBService: ImgBBService, jwtConfig: JwtConfig, aiService: AiChatService) {
@@ -34,11 +35,23 @@ fun Application.configureRouting(dataBaseSource: DataBaseSource, imgBBService: I
         authenticate("jwt_auth") {
             get("/check") {
                 println(call.request.headers["Authorization"])
+                try {
 
-                call.respond(Info("Finally Got it"))
+                    val token = call.request.headers["Authorization"]?:return@get
+
+                    val response = Client.httpclient.post("http://localhost:8082/check") {
+                        headers.append(HttpHeaders.Authorization, token)
+                    }
+                    println(response)
+
+                    call.respond(Info("Finally Got it"))
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
 
             }
-            }
+        }
+
         configChats(dataBaseSource,aiService)
         connectWebSocket(dataBaseSource)
         configProfile(dataBaseSource,imgBBService)
@@ -451,21 +464,31 @@ fun Routing.configAuth(dataBaseSource: DataBaseSource, imgBBService: ImgBBServic
                 contentType(ContentType.Application.Json)
                 setBody(data)
             }
-            val resp=response.body<UserSession>()
-            println(resp)
-            call.respond(resp)
+            if(response.status== HttpStatusCode.OK) {
+                val resp = response.body<UserSession>()
+                println(resp)
+                call.respond(resp)
+            }else{
+                call.respond(HttpStatusCode.Forbidden)
+            }
 
         }
 
-        post ("/fcmToken"){
+        post("/fcmToken"){
             try {
                 println("The Fun Called fcm Token fun")
-                val data = call.receive<TokenData>()
-              val response= Client.httpclient.post {
-
+                val data = call.receive<FcmData>()
+              val response= Client.httpclient.post("http://localhost:8082/auth/fcmToken"){
+                  contentType(ContentType.Application.Json)
+                  setBody(data)
               }
-                println("the Token Of Device ${data.token}")
-                call.respond(HttpStatusCode.OK)
+                if(response.status == HttpStatusCode.OK) {
+                    println("the Token Of Device ${data.token}")
+                    call.respond(HttpStatusCode.OK)
+                }else{
+                    println("cannot save fcm token in db")
+
+                }
             }catch (e:Exception){
                 e.printStackTrace()
             }
@@ -473,35 +496,34 @@ fun Routing.configAuth(dataBaseSource: DataBaseSource, imgBBService: ImgBBServic
         }
         post("/login") {
             val data=call.receive<LoginData>()
-            val info=dataBaseSource.getEmail(data.email)
-            if(info==null){
-                call.respond(HttpStatusCode.NotFound,"The User Not Found")
-                return@post
+            val response=Client.httpclient.post("http://localhost:8082/auth/login") {
+                contentType(ContentType.Application.Json)
+                setBody(data)
             }
-            val randomToken= UUID.randomUUID().toString()
-            val accessToken=generateToken(info.uid,jwtConfig)
-            dataBaseSource.saveJwtToken(TokenData(
-                info.uid,
-                token = randomToken,
-            ))
-            println("The server sends jwttoen to client ${accessToken}")
-            call.respond(UserSession(randomToken,accessToken))
+            if(response.status == HttpStatusCode.OK) {
+                val resp=response.body<UserSession>()
+                println(resp)
+                call.respond(resp)
+            }else{
+                call.respond(HttpStatusCode.Unauthorized)
+            }
+
+
         }
         post("/refreshToken"){
             try {
                 println("The RefreshToken Called")
                 val data = call.receive<Info>()
                 println("The Token I get ${data.token}")
-                val info = dataBaseSource.getJwtToken(data.token)
-                if (info == null) {
-                    println("The refreshToken wasnt In Db")
-                    call.respond(HttpStatusCode.NotFound, "The User Not Found")
-                    return@post
+                val response=Client.httpclient.post("http://localhost:8082/auth/refreshToken") {
+                    contentType(ContentType.Application.Json)
+                    setBody(data)
                 }
-                val randomToken = UUID.randomUUID().toString()
-                val accessToken = generateToken(info.uid, jwtConfig)
-                dataBaseSource.saveJwtToken(TokenData(info.uid, token = randomToken))
-                call.respond(UserSession(randomToken, accessToken))
+                if(response.status == HttpStatusCode.OK){
+                    val info=response.body<Info>()
+                    println(info)
+                    call.respond(info)
+                }
             }catch (e:Exception){
                 e.printStackTrace()
             }
