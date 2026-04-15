@@ -36,15 +36,17 @@ fun Application.configureRouting(dataBaseSource: DataBaseSource, imgBBService: I
             get("/check") {
                 println(call.request.headers["Authorization"])
                 try {
-
                     val token = call.request.headers["Authorization"]?:return@get
 
                     val response = Client.httpclient.post("http://localhost:8082/check") {
                         headers.append(HttpHeaders.Authorization, token)
                     }
                     println(response)
-
-                    call.respond(Info("Finally Got it"))
+                    if(response.status==HttpStatusCode.OK) {
+                        call.respond(response(true, "Finally Got it"))
+                    }else{
+                        call.respond(response(false, " dont  get  it"))
+                    }
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
@@ -484,9 +486,10 @@ fun Routing.configAuth(dataBaseSource: DataBaseSource, imgBBService: ImgBBServic
               }
                 if(response.status == HttpStatusCode.OK) {
                     println("the Token Of Device ${data.token}")
-                    call.respond(HttpStatusCode.OK)
+                    call.respond(response(true,"Sucess"))
                 }else{
                     println("cannot save fcm token in db")
+                    call.respond(response(false,"failed"))
 
                 }
             }catch (e:Exception){
@@ -520,7 +523,7 @@ fun Routing.configAuth(dataBaseSource: DataBaseSource, imgBBService: ImgBBServic
                     setBody(data)
                 }
                 if(response.status == HttpStatusCode.OK){
-                    val info=response.body<Info>()
+                    val info=response.body<UserSession>()
                     println(info)
                     call.respond(info)
                 }
