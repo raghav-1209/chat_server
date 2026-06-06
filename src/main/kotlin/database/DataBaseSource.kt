@@ -30,16 +30,6 @@ import org.jetbrains.exposed.sql.update
 import kotlin.collections.map
 
 class DataBaseSource(val db: Database) {
-    fun insertUser(user: SignInData) {
-        transaction(db) {
-            Tables.users.insert {
-                it[email] = user.email
-                it[uid] = user.uid
-                it[name] = user.name
-            }
-
-        }
-    }
 
     fun getUserByUid(uid: String): UserData? {
         return transaction(db) {

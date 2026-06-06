@@ -27,18 +27,19 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.util.*
 import io.ktor.client.request.*
-import org.example.com.raghav.jwt.JwtService
 
 fun Application.configureRouting(dataBaseSource: DataBaseSource, imgBBService: ImgBBService, jwtConfig: JwtConfig, aiService: AiChatService) {
 
     routing {
         authenticate("jwt_auth") {
             get("/check") {
+                println("The chc fun called")
+
                 println(call.request.headers["Authorization"])
                 try {
                     val token = call.request.headers["Authorization"]?:return@get
 
-                    val response = Client.httpclient.post("http://localhost:8082/check") {
+                    val response = Client.httpclient.post("http://localhost:8088/check") {
                         headers.append(HttpHeaders.Authorization, token)
                     }
                     println(response)
@@ -459,80 +460,59 @@ fun Routing.configStatus(dataBaseSource: DataBaseSource,imgBBService: ImgBBServi
 }
 fun Routing.configAuth(dataBaseSource: DataBaseSource, imgBBService: ImgBBService, jwtConfig: JwtConfig) {
     route("/auth") {
-        post("/signIn") {
-            println("The SiginIn Fun Called")
-            val data=call.receive<SignInData>()?:return@post
-          val response = Client.httpclient.post("http://localhost:8082/auth/signIn") {
+            post("/signIn") {
+                println("siginIn")
+                val body=call.receive<SignInData>()
+                val response=Client.httpclient.post("http://localhost:8088/auth/signIn") {
+                    contentType(ContentType.Application.Json)
+                    setBody(body)
+                }
+                println(response.body<UserSession>())
+                call.respond(response.body<UserSession>())
+
+
+        }
+        post("/login") {
+            println("the login fun called")
+            val body=call.receive<SignInData>()
+            val response= Client.httpclient.post("http://localhost:8088/auth/login") {
+                setBody(body)
                 contentType(ContentType.Application.Json)
-                setBody(data)
             }
-            if(response.status== HttpStatusCode.OK) {
-                val resp = response.body<UserSession>()
-                println(resp)
-                call.respond(resp)
-            }else{
-                call.respond(HttpStatusCode.Forbidden)
-            }
+            call.respond(response.body<UserSession>())
+
 
         }
 
         post("/fcmToken"){
             try {
                 println("The Fun Called fcm Token fun")
-                val data = call.receive<FcmData>()
-              val response= Client.httpclient.post("http://localhost:8082/auth/fcmToken"){
-                  contentType(ContentType.Application.Json)
-                  setBody(data)
-              }
-                if(response.status == HttpStatusCode.OK) {
-                    println("the Token Of Device ${data.token}")
-                    call.respond(response(true,"Sucess"))
-                }else{
-                    println("cannot save fcm token in db")
-                    call.respond(response(false,"failed"))
-
+                val data=call.receive<FcmData>()
+                val response= Client.httpclient.post ("http://localhost:8088/auth/fcmToken"){
+                    setBody(data)
+                    contentType(ContentType.Application.Json)
                 }
+                call.respond(HttpStatusCode.OK, "Successfull")
+
             }catch (e:Exception){
                 e.printStackTrace()
             }
 
         }
-        post("/login") {
-            val data=call.receive<LoginData>()
-            val response=Client.httpclient.post("http://localhost:8082/auth/login") {
-                contentType(ContentType.Application.Json)
-                setBody(data)
-            }
-            if(response.status == HttpStatusCode.OK) {
-                val resp=response.body<UserSession>()
-                println(resp)
-                call.respond(resp)
-            }else{
-                call.respond(HttpStatusCode.Unauthorized)
-            }
 
-
-        }
         post("/refreshToken"){
             try {
-                println("The RefreshToken Called")
-                val data = call.receive<Info>()
-                println("The Token I get ${data.token}")
-                val response=Client.httpclient.post("http://localhost:8082/auth/refreshToken") {
-                    contentType(ContentType.Application.Json)
+                val data=call.receive<Info>()
+                val response= Client.httpclient.post ("http://localhost:8088/auth/refreshToken"){
                     setBody(data)
+                    contentType(ContentType.Application.Json)
                 }
-                if(response.status == HttpStatusCode.OK){
-                    val info=response.body<UserSession>()
-                    println(info)
-                    call.respond(info)
-                }
+                call.respond(response.body<UserSession>())
+
             }catch (e:Exception){
                 e.printStackTrace()
             }
         }
-
-
 
     }
 }

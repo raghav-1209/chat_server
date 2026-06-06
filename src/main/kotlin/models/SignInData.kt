@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class SignInData(
     val email: String,
-    val name: String,
-    val uid: String
+    val name: String?=null,
+    val idToken: String
 )
 
